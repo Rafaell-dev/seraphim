@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Group {
+  group_id          Int      @id @default(autoincrement())
+  group_name        String   @db.VarChar(255)
+  group_description String?  @db.VarChar(255)
+  group_createdAt   DateTime @default(now())
+  group_updatedAt   DateTime @updatedAt
+  User              User[]
+
+  @@map("groups")
+}
+
+model User {
+  user_id        Int      @id @default(autoincrement())
+  user_name      String
+  user_email     String   @unique
+  user_password  String   @db.VarChar(255)
+  user_group_id  Int
+  user_createdAt DateTime @default(now())
+  user_updatedAt DateTime @updatedAt
+  group          Group    @relation(fields: [user_group_id], references: [group_id])
+
+  @@index([user_group_id], map: "users_user_group_id_fkey")
+  @@map("users")
+}
+
+model Client {
+  cli_id       Int    @id @default(autoincrement())
+  cli_type     String @db.VarChar(255) //pessoa fisica ou juridica
+  cli_cpf      String? @unique //pessoa fisica
+  cli_cnpj     String? @unique //pessoa juridica
+  cli_fantasia String? @db.VarChar(255) //pessoa juridica
+  cli_razao    String? @db.VarChar(255) //pessoa juridica
+  cli_name     String? @db.VarChar(255) //pessoa fisica
+  cli_email    String @unique //ambos
+  cli_phone    String @db.VarChar(255) //Telefone
+  cli_password String @db.VarChar(255) //ambos
+
+  cli_zipcode  String? @db.VarChar(255) //cep
+  cli_ibge     String? @db.VarChar(255) //coidgo ibge
+  cli_state    String? @db.VarChar(255) //estado
+  cli_city     String? @db.VarChar(255) //cidade
+  cli_district String? @db.VarChar(255) //bairro
+  cli_street   String? @db.VarChar(255) //rua
+  cli_number   String? @db.VarChar(255) //numero
+  cli_country  Int?    @db.Int() //codigo pais
+
+  cli_createdAt DateTime      @default(now())
+  cli_updatedAt DateTime      @updatedAt
+  Transaction   Transaction[]
+
+  @@map("clients")
+}
+
+model Transaction {
+  tra_id          Int       @id @default(autoincrement())
+  tra_client_id   Int
+  tra_services_id Int
+  tra_status      String    @db.VarChar(255)
+  tra_total_value Float
+  tra_payment     Int
+  tra_createdAt   DateTime  @default(now())
+  tra_updatedAt   DateTime  @updatedAt
+  client_id       Client    @relation(fields: [tra_client_id], references: [cli_id])
+  service_id      Service   @relation(fields: [tra_services_id], references: [ser_id])
+  T_items         T_items[]
+
+  @@index([tra_client_id], map: "client_tra_client_id_fkey")
+  @@index([tra_services_id], map: "service_tra_services_id_fkey")
+  @@map("transactions")
+}
+
+model Service {
+  ser_id          Int           @id @default(autoincrement())
+  ser_name        String        @db.VarChar(255)
+  ser_description String        @db.VarChar(255)
+  ser_value       Float
+  ser_createdAt   DateTime      @default(now())
+  ser_updatedAt   DateTime      @updatedAt
+  Transaction     Transaction[]
+  T_items         T_items[]
+
+  @@map("services")
+}
+
+model T_items {
+  t_item_id        Int         @id @default(autoincrement())
+  t_item_tra_id    Int
+  t_item_ser_id    Int
+  t_item_value     Float
+  t_item_discount  Float
+  t_item_createdAt DateTime    @default(now())
+  t_item_updatedAt DateTime    @updatedAt
+  Transaction      Transaction @relation(fields: [t_item_tra_id], references: [tra_id])
+  Service          Service     @relation(fields: [t_item_ser_id], references: [ser_id])
+
+  @@index([t_item_tra_id], map: "transaction_t_item_tra_id_fkey")
+  @@index([t_item_ser_id], map: "service_t_item_ser_id_fkey")
+  @@map("T_items")
+}
